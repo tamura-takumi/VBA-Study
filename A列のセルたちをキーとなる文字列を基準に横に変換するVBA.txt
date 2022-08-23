@@ -15,7 +15,7 @@ Sub キー文字列基準に縦横変換()
     Do While Range("A" & cnt) <> "" 'A列が空白でないなら
     Set rang = Range("A" & cnt)
         'aaa
-        If InStr(rang.Value, str) > 0 Then '文字列「edit」を含むなら..
+        If InStr(rang.Value, str) > 0 Then '文字列「keyStr」を含むなら..
             rang.Copy Destination:=rang.Offset(0, 8) '右に8列目に出力
             migiCnt = 0
         Else
