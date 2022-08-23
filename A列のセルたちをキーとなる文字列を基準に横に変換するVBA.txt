@@ -1,4 +1,4 @@
-Sub edit_フォーマットにそろえる()
+Sub キー文字列基準に縦横変換()
 
     '整形前のやつを作成
     Dim str As String
