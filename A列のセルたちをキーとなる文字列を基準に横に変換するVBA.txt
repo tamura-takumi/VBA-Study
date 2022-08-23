@@ -1,0 +1,43 @@
+Sub edit_フォーマットにそろえる()
+
+    '整形前のやつを作成
+    Dim str As String
+    Dim rang As Range
+    Dim seikeiRang As Range
+    Dim cnt As Integer
+    Dim migiCnt As Integer
+    cnt = 1
+    migiCnt = 0
+    
+    '入力フォーム
+    str = InputBox("キーとなる文字を入力", "キーとなる文字を入力して", "keyStr")
+    
+    Do While Range("A" & cnt) <> "" 'A列が空白でないなら
+    Set rang = Range("A" & cnt)
+        'aaa
+        If InStr(rang.Value, str) > 0 Then '文字列「edit」を含むなら..
+            rang.Copy Destination:=rang.Offset(0, 8) '右に8列目に出力
+            migiCnt = 0
+        Else
+            rang.Copy Destination:=rang.Offset(0, 9 + migiCnt) '右に9列目以降に出力
+            migiCnt = migiCnt + 1
+        End If
+        
+        'カウントアップ
+        cnt = cnt + 1
+        
+    Loop
+    
+    '整形処理
+    '下記サイト手順で整形するが..できたらコードで記述
+    'http://www4.synapse.ne.jp/yone/excel2010/excel2010_cell_del.html
+    'https://dailyrecords.blog/archives/11140
+    
+    Set seikeiRang = Range("A1").Offset(0, 8) 'I1セル
+    seikeiRang.CurrentRegion.Select
+    
+    '空白セルを選択後、削除上詰め
+    Selection.SpecialCells(xlCellTypeBlanks).Select '③空白セル選択
+    Selection.Delete Shift:=xlUp '④削除上詰め
+    
+End Sub
