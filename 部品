@@ -1,0 +1,9 @@
+Sub Ctrl_D改()
+    Dim rang As Range
+    Set rang = Selection
+    
+    rang.Offset(-1, 0).Copy rang
+    rang.Offset(-2, 0).Copy rang.Offset(-1, 0)
+    
+    rang.Offset(1, 0).Select
+End Sub
