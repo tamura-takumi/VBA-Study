@@ -1,0 +1,32 @@
+Sub フォルダ内の画像を等間隔セルで貼り付け()
+Dim lngTop As Long
+Dim objFile As Object
+Dim objFldr As FileSystemObject
+
+    Set objFldr = CreateObject("Scripting.FileSystemObject")
+
+    Dim rangT As Range
+    Dim rangL As Range
+    Dim inte As Integer
+    inte = 0
+    Set rangT = Range("B2")
+    Set rangL = Range("B2")
+    
+    
+    For Each objFile In objFldr.GetFolder("C:\Users\xxxxx\OneDrive\デスクトップ\作ったソフトxxxxx\楽々打鍵\sample").Files
+        ActiveSheet.Shapes.AddPicture _
+                Filename:=objFile, _
+                LinkToFile:=False, _
+                SaveWithDocument:=True, _
+                Left:=rangL.Left, _
+                Top:=rangT.Offset(inte, 0).Top, _
+                Width:=-1, _
+                Height:=-1
+        inte = inte + 60
+        
+    Next
+    
+    '貼り付け終わったら、フォルダ内画像を削除
+    Kill "C:\Users\xxxxx\OneDrive\デスクトップ\作ったソフトxxxxx\楽々打鍵\sample\*.png"
+
+End Sub
