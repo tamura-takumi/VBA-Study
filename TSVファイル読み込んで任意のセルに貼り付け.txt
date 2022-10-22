@@ -1,0 +1,38 @@
+Sub TSVファイル読み込んで任意のセルに貼り付け()
+    Dim i As Long
+    Dim j As Long
+    Dim strList As String
+    Dim strSplit() As String
+    Dim adoSt As New ADODB.Stream
+    
+    'passにTSVファイルのパス(ファイル名含む)が入るように値を設定
+    Dim cmd As String
+    pass = Selection.Value
+    
+    Sheets("sample").Select
+    
+    i = 1
+    With adoSt
+        .Type = adTypeText
+        .Charset = "UTF-8"
+        .Open
+        .LoadFromFile (pass)
+        Do While Not (.EOS)
+            strList = .ReadText(adReadLine)
+            strSplit = Split(strList, Chr(9))
+            For j = LBound(strSplit) To UBound(strSplit)
+                Cells(i, j + 1) = strSplit(j)
+            Next
+            i = i + 1
+        Loop
+        .Close
+    End With
+  
+    Sheets("sample").Select
+    Range("A1").CurrentRegion.Select
+    Selection.Copy
+    
+    Sheets("temp").Select
+    Range("B5").Select
+    ActiveSheet.Paste
+End Sub
