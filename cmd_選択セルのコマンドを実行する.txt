@@ -1,0 +1,22 @@
+Sub cmd_選択セルのコマンドを実行する()
+    'コマンドプロンプトを使うためのオブジェクト
+    Dim wsh As New IWshRuntimeLibrary.WshShell
+    'コマンド結果を格納する変数
+    Dim result As WshExec
+    
+    Dim cmd As String
+    
+    cmd = Selection.Value
+    
+    'コマンド実行
+    Set result = wsh.Exec("%ComSpec% /c " & cmd)
+    
+    'コマンドの実行が終わるまで待機
+    Do While result.Status = 0
+        DoEvents
+    Loop
+    
+    Set result = Nothing
+    Set wsh = Nothing
+    
+End Sub
