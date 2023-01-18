@@ -1,0 +1,93 @@
+Function SQL生成_テーブルカラム部分(cellNum As Integer, culumnNum As Integer)
+    Dim str1 As String
+
+    
+    str1 = "insert into " & Sheets("データ入力").Range("B12") & "("   'insert into TBL (
+    
+
+    num1 = Range("c12").End(xlDown).Count
+
+    num1 = culumnNum
+    
+    Dim cnt As Integer
+    cnt = 12
+    For i = 0 To num1  'カラムの部分生成
+        str1 = str1 & Sheets("データ入力").Cells(cnt + i, 3).Value & ","
+    Next i
+    
+    str1 = CutRight(str1, 2)
+    str1 = str1 & ")values("
+    
+    cnt = 0
+    
+    SQL生成_テーブルカラム部分 = str1
+    
+End Function
+
+Sub SQLいっぱい発行()
+    Dim num1, num2 As Integer
+    Dim rcdCnt As Integer
+    Dim sqlStr As String
+    
+    rcdCnt = InputBox("レコード個数を入力して", "レコードの個数を入力してください", "2")
+    rcdCnt = rcdCnt - 1
+    
+    num1 = Range("D12").End(xlToRight).Count
+    
+    Sheets("SQL生成").Select
+    num2 = 0 'num2を使うのはByrefの引数の型が一致しませんのエラー対策
+    
+    For i = 4 To rcdCnt + 4
+        num2 = num2 + i
+        sqlStr = SQL生成_テーブルカラム部分(num2, 5)
+        sqlStr = sqlStr & SQL生成_データ部分(4 + i - 4, 5)
+        Sheets("SQL生成").Cells(i - 3, 1) = sqlStr
+    Next i
+End Sub
+
+Function SQL生成_データ部分(cellNum As Integer, culumnNum As Integer)
+    Dim cnt As Integer
+    Dim num1 As Integer
+
+    Dim str1 As String
+    
+
+    str1 = ""
+    num1 = culumnNum
+    
+    cnt = 0
+    For i = 0 To num1  'データ部分の生成
+        str1 = str1 & Sheets("データ入力").Cells(cnt + i + 12, cellNum).Value & ","
+    Next i
+    str1 = CutRight(str1, 2)
+    str1 = str1 & ");"
+    
+
+    SQL生成_データ部分 = str1
+End Function
+
+
+'文字列の右側から指定文字数削除する関数
+'https://vbabeginner.net/delete-specified-number-characters/
+'// 引数１：文字列
+'// 引数２：削除文字数
+'// 戻り値：削除後の文字列
+Function CutRight(s, i As Long) As String
+    Dim iLen    As Long     '// 文字列長
+    
+    '// 文字列ではない場合
+    If VarType(s) <> vbString Then
+        Exit Function
+    End If
+    
+    iLen = Len(s)
+    
+    '// 文字列長より指定文字数が大きい場合
+    If iLen < i Then
+        Exit Function
+    End If
+    
+    '// 指定文字数を削除して返す
+    CutRight = Left(s, iLen - i)
+End Function
+
