@@ -1,0 +1,31 @@
+Sub バッチファイル生成と実行()
+	'参照用シートで、ファイル名の入ったセルを選択状態でマクロ実行。任意のファイルを開く事ができる。
+	'バッチファイル中身シートに書き込み内容が記述してある状態。
+	
+	'参考
+	'https://www.sejuku.net/blog/87566
+	'https://vbabeginner.net/execute-batch-file/#google_vignette
+    Dim filename, path As String
+    filename = Worksheets("参照用").Range("B3").Value
+    
+    Worksheets("バッチファイル中身").Activate
+    
+    path = "ファイルがあるディレクトリのパスをここに記述" & filename & ".bat"
+    
+    'ファイルを書き込みで開く(無ければ新規作成される、あれば上書き)
+    Open path For Output As #1
+
+	'バッチファイル中身シート、A1～Anセルに書き込み内容が記述してある。
+    '開いたファイルに書き込む
+    'Print #1, "chcp 65001"
+    Print #1, Range("A1").Value 'E:
+    Print #1, Range("A2").Value 'cd E:\vba
+    Print #1, Range("A3").Value 'start sample.txt
+    Print #1, Range("A4").Value 'pause
+    '開いたファイルを閉じる
+    Close #1
+
+    '生成したバッチファイル実行
+    dProcessId = Shell(path)
+    
+End Sub
