@@ -183,6 +183,8 @@ Private Sub 処理実行(syoriNo As Integer)
         ReDim tmpStrList(UBound(tmpCnt), areaFindTo - areaFindFrom + 1) As String
         For i = 0 To UBound(tmpCnt)
             tmpStrList(i) = ageList(i)
+            'tempStrList(0,0)は、縦列の個数文の繰り返しがしたいので、
+            'UBound(tempStrList(0,0)→areaFindToにすればいい。
             For j = 0 To UBound(tmpStrList(0, 0)) - 1 'tmpStrList(0, 0)→ここで、「配列がありません」エラー発生
                 tmpStrList(i, j) = Cells(areaFindFrom + j, tmpCnt(i))
                 str = str & tmpStrList(i, j) & Chr(10)
