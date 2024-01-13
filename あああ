@@ -1,0 +1,196 @@
+Sub main()
+
+    '変数
+    Dim bookName As String '値入力シートのブック名
+    Dim syoriNo As Integer  '処理内容番号
+    Dim arrList As Variant 'カンマ区切り入力値
+    
+    'Dim inputValChckResult(2) As Variant
+    
+    Workbooks("Book1.xlsm").Activate
+    Sheets("値入力用シート").Activate
+    
+    '引数個数チェック
+    If カンマ区切り入力値引数個数チェック(Range("B15").Value) = False Then
+        MsgBox "入力値を見直して下さい"
+        Exit Sub
+    End If
+    
+    '処理番号に応じた処理を実行する。
+    '1:
+    Call 処理実行(Range("B15").Value)
+    
+    MsgBox "main終了"
+    
+End Sub
+Sub おためし01()
+    '表示順位の個数分、順位行を作成
+    Dim bottomRow As Long
+    bottomRow = 1048576 'EXCELの最終行
+    For i = 0 To 3 - 2
+       Rows("7:10").Copy
+       Rows(Range("B" & bottomRow).End(xlUp).Offset(1, 0).row & ":" & Range("B" & bottomRow).End(xlUp).Offset(1, 0).row).Insert Shift:=xlDown
+       Range("B" & Range("B" & bottomRow).End(xlUp).row & ":" & "B" & Range("B" & bottomRow).End(xlUp).row + 3).FormulaR1C1 = i + 2 & "位"
+    Next i
+End Sub
+Sub おためし02()
+    'おためし02
+    MsgBox "testおためし02"
+End Sub
+Sub おためし03()
+    'おためし03
+    MsgBox "testおためし03"
+End Sub
+
+Private Function カンマ区切り入力値引数個数チェック(syoriNo As Integer)
+
+    カンマ区切り入力値引数個数チェック = True
+    
+    '処理内容番号にたいする、引数リストのチェック
+    Select Case syoriNo
+    Case 1
+        'カンマ区切り入力値引数を代入
+        arrList = Split(Range("B16").Value, ",")
+        
+        '確認用
+        'Dim i As Integer
+        'For i = 0 To UBound(arrList)
+        '    Debug.Print arrList(i)
+        'Next i
+        
+        '引数個数のチェック
+        If 5 <> UBound(arrList) + 1 Then
+            カンマ区切り入力値引数個数チェック = False
+        End If
+        
+    Case Else
+        カンマ区切り入力値引数個数チェック = False
+    End Select
+
+End Function
+
+Private Sub 処理実行(syoriNo As Integer)
+
+    Dim bottomRow As Long
+    bottomRow = 1048576 'EXCELの最終行
+
+    Select Case syoriNo
+    Case 1
+        '引数内容
+        '地域が「群馬～山梨（関東と西北部）,期間FROM,期間TO,利用する表の名称,第何位まで表示するか？
+        Dim arrList() As String
+        Dim ageList() As String
+        Dim tmpStrList() As String
+        Dim tmpCnt() As Integer
+        Dim areaFindFrom, areaFindTo As Integer
+        Dim cnt As Integer
+        Dim str As String
+        Dim flg As Boolean
+        flg = False
+        Dim map As Object
+        Set map = CreateObject("Scripting.Dictionary")
+        Dim keys() As Variant
+        
+        'カンマ区切りの入力値を配列に格納する
+        arrList = Split(Range("B16").Value, ",")
+        
+        '地域別の処理
+        '地域シートの先頭連番と地域名をマップとして保持する
+        Workbooks("da01.xlsx").Activate
+        Sheets("地域").Activate
+        For i = Range("A1").End(xlDown).row + 1 To Range("A" & bottomRow).End(xlUp).row
+            map.Add Range("A" & i).Value, Range("B" & i).Value
+        Next i
+        '変数keysにキー情報を保持
+        keys = map.keys
+        
+        '対象ひな形をコピーしリネーム
+        'もし、地域の人口ランキングシートが存在するなら、シート削除
+        For i = 1 To Worksheets.Count
+            If Sheets(i).Name = "地域の人口ランキング" Then
+                Application.DisplayAlerts = False
+                Sheets(i).Delete
+                Application.DisplayAlerts = True
+            End If
+        Next
+        
+        'コピーとリネーム
+        Sheets(arrList(3)).Copy after:=Worksheets(Worksheets.Count)
+        ActiveSheet.Name = "地域の人口ランキング"
+        
+        '表示順位の個数分、順位行を作成
+        For i = 0 To arrList(4) - 2
+            Rows("7:10").Copy
+            Rows(Range("B" & bottomRow).End(xlUp).Offset(1, 0).row & ":" & Range("B" & bottomRow).End(xlUp).Offset(1, 0).row).Insert Shift:=xlDown
+            Range("B" & Range("B" & bottomRow).End(xlUp).row & ":" & "B" & Range("B" & bottomRow).End(xlUp).row + 3).FormulaR1C1 = i + 2 & "位"
+        Next i
+        
+        '地域名に地域を入力
+        Range("C1:I2").FormulaR1C1 = map.Item(keys(arrList(0)))
+        
+        '「人口シートの地域列の先頭連番=カンマ区切りの入力値、第一引数」の順位を決定する
+        Sheets("人口").Activate
+        
+        '年代を配列に格納し保持させる（年代配列）
+        ReDim ageList(0 To (Range("B8").End(xlToRight).Column - 1) - (Range("B8").End(xlToRight).Column / 3 * 2)) As String
+        For i = LBound(ageList) To UBound(ageList)
+            ageList(i) = Cells(7, 2 + i * 3)
+        Next i
+        
+        '年代配列から、年代From～Toの範囲で抽出後、再度年代配列に格納する。
+        cnt = 0
+        For i = LBound(ageList) To UBound(ageList)
+            If ageList(i) Like arrList(1) & "?" Or cnt <> 0 Then
+                ageList(cnt) = ageList(i)
+                If ageList(i) Like arrList(2) & "?" And i <> UBound(ageList) Then
+                    ReDim Preserve ageList(0 To i) As String
+                    Exit For
+                End If
+                cnt = cnt + 1
+            End If
+        Next i
+
+        '抽出した年代配列の範囲内で人口総数の最大N位のものを探す
+        '検索開始行、終了行の取得
+        cnt = 0
+        For i = Range("A12").row To Range("A12").End(xlDown).row
+            
+            '検索開始行の取得
+            If arrList(0) = Left(Range("A" & i), 1) And Range("A12").row = i Then
+                areaFindFrom = Range("A" & i).row
+            ElseIf arrList(0) = Left(Range("A" & i), 1) And arrList(0) <> Left(Range("A" & i - 1), 1) Then
+                areaFindFrom = Range("A" & i).row
+            End If
+            
+            '検索終了行の取得
+            If arrList(0) = Left(Range("A" & i), 1) And Range("A12").End(xlDown).row = i Then
+                areaFindTo = Range("A" & i).row
+            ElseIf arrList(0) = Left(Range("A" & i), 1) And arrList(0) <> Left(Range("A" & i + 1), 1) Then
+                areaFindTo = Range("A" & i).row
+            End If
+        Next i
+        
+        '年度範囲内、地域CD範囲内の人口総数からN位までの値を取得
+        ReDim tmpCnt(UBound(ageList)) As Integer
+        tmpCnt(0) = 2
+        cnt = 1
+        '年度範囲の人口総数のセル列番号を取得
+        For i = 1 To UBound(ageList)
+            'tmpCnt(0) = ageList(i) * 3 + 2 + 1
+            tmpCnt(i) = tmpCnt(0) + 3
+        Next i
+        
+        ReDim tmpStrList(UBound(tmpCnt), areaFindTo - areaFindFrom + 1) As String
+        For i = 0 To UBound(tmpCnt)
+            tmpStrList(i) = ageList(i)
+            For j = 0 To UBound(tmpStrList(0, 0)) - 1 'tmpStrList(0, 0)→ここで、「配列がありません」エラー発生
+                tmpStrList(i, j) = Cells(areaFindFrom + j, tmpCnt(i))
+                str = str & tmpStrList(i, j) & Chr(10)
+            Next j
+        Next i
+        
+        
+    Case Else
+        
+    End Select
+End Sub
