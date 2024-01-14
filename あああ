@@ -68,6 +68,41 @@ Private Function カンマ区切り入力値引数個数チェック(syoriNo As 
     End Select
 
 End Function
+'[VBA] 配列を昇順または降順に並べ替える関数
+
+'Option Base 1
+
+'配列の昇順降順ソート
+'https://atelierkobato.com/mother/
+Function Sort_Array(x() As Variant, Optional s As Long = 0) As Variant
+
+    Dim k As Long
+    Dim ub As Long
+    Dim y() As Variant
+
+    '配列x()のインデックス上限値を取得
+    ub = UBound(x)
+
+    '配列y()のインデックス上限値を設定
+    ReDim y(ub)
+
+    For k = 1 To ub
+
+        'オプション引数s=0は昇順です
+        If s = 0 Then
+            y(k) = WorksheetFunction.Small(x(), k)
+
+          'オプション引数sに0以外の値が入ると降順です
+        Else
+            y(k) = WorksheetFunction.Large(x(), k)
+
+        End If
+
+    Next k
+
+    Sort_Array = y()
+
+End Function
 
 Private Sub 処理実行(syoriNo As Integer)
 
@@ -80,7 +115,9 @@ Private Sub 処理実行(syoriNo As Integer)
         '地域が「群馬～山梨（関東と西北部）,期間FROM,期間TO,利用する表の名称,第何位まで表示するか？
         Dim arrList() As String
         Dim ageList() As String
+        Dim rankList() As String
         Dim tmpStrList() As String
+        Dim tmpStrList1() As String
         Dim tmpCnt() As Integer
         Dim areaFindFrom, areaFindTo As Integer
         Dim cnt As Integer
@@ -137,6 +174,21 @@ Private Sub 処理実行(syoriNo As Integer)
             ageList(i) = Cells(7, 2 + i * 3)
         Next i
         
+        '「年度範囲の人口総数のセル列番号を取得」の総数データ抽出開始列番号を取得し、tmpCnt(0)に代入
+        ReDim tmpCnt(UBound(ageList)) As Integer
+        For i = LBound(ageList) To UBound(ageList)
+            If ageList(i) Like arrList(1) & "?" Then
+                If i = 0 Then
+                    tmpCnt(0) = 2
+                    Debug.Print "dddd"
+                Else
+                    tmpCnt(0) = 2 + i * 3
+                    Debug.Print "ddddsssss"
+                End If
+            End If
+        Next i
+        ReDim Preserve tmpCnt(UBound(ageList)) As Integer
+        
         '年代配列から、年代From～Toの範囲で抽出後、再度年代配列に格納する。
         cnt = 0
         For i = LBound(ageList) To UBound(ageList)
@@ -149,7 +201,8 @@ Private Sub 処理実行(syoriNo As Integer)
                 cnt = cnt + 1
             End If
         Next i
-
+        
+        
         '抽出した年代配列の範囲内で人口総数の最大N位のものを探す
         '検索開始行、終了行の取得
         cnt = 0
@@ -171,25 +224,152 @@ Private Sub 処理実行(syoriNo As Integer)
         Next i
         
         '年度範囲内、地域CD範囲内の人口総数からN位までの値を取得
-        ReDim tmpCnt(UBound(ageList)) As Integer
-        tmpCnt(0) = 2
-        cnt = 1
+        ReDim Preserve tmpCnt(UBound(ageList)) As Integer
+        '列の開始列番号を代入
+        'tmpCnt(0) = 2
+        str = str & ":" & tmpCnt(0)
+        'cnt = 2
         '年度範囲の人口総数のセル列番号を取得
-        For i = 1 To UBound(ageList)
+        For i = 1 To UBound(ageList) - 1
             'tmpCnt(0) = ageList(i) * 3 + 2 + 1
-            tmpCnt(i) = tmpCnt(0) + 3
+            tmpCnt(i) = tmpCnt(i - 1) + 3
+            str = str & ":" & tmpCnt(i)
         Next i
         
-        ReDim tmpStrList(UBound(tmpCnt), areaFindTo - areaFindFrom + 1) As String
-        For i = 0 To UBound(tmpCnt)
-            tmpStrList(i) = ageList(i)
-            'tempStrList(0,0)は、縦列の個数文の繰り返しがしたいので、
-            'UBound(tempStrList(0,0)→areaFindToにすればいい。
-            For j = 0 To UBound(tmpStrList(0, 0)) - 1 'tmpStrList(0, 0)→ここで、「配列がありません」エラー発生
-                tmpStrList(i, j) = Cells(areaFindFrom + j, tmpCnt(i))
-                str = str & tmpStrList(i, j) & Chr(10)
+        Debug.Print str
+        str = ""
+        Debug.Print UBound(tmpCnt)
+        cnt = 0
+        
+        '人口データを配列に格納する
+        ReDim tmpStrList(UBound(tmpCnt) * (areaFindTo - areaFindFrom + 1)) As String
+        For i = 0 To UBound(tmpCnt) - 1 '横軸
+            cnt = 0
+            Debug.Print "処理い"
+            For j = areaFindFrom To areaFindTo '縦軸
+                tmpStrList(i) = Cells(areaFindFrom + cnt, tmpCnt(i))
+                Debug.Print "処理あ"
+                cnt = cnt + 1
+                str = str & tmpStrList(i) & Chr(10)
             Next j
+            str = str & Chr(10)
         Next i
+        Debug.Print str
+        
+        '抽出した人口から最大N位までを算出
+        '地域CDの個数区切りで年代は切替
+        
+        
+        cnt = 0
+        str = ""
+        
+        ReDim rankList(4) As String
+        For i = 0 To UBound(rankList)
+            rankList(i) = "0"
+        Next i
+        ReDim tmpStrList1(UBound(tmpStrList)) As String
+        For i = 0 To UBound(tmpStrList)
+            If tmpStrList(i) = "" Then
+                tmpStrList(i) = "0"
+            End If
+            tmpStrList1(i) = tmpStrList(i)
+        Next i
+        
+        Dim str1 As String
+        
+        For rnk = 0 To arrList(4) - 1
+            
+            
+            'Range("E" & i)とrankList(rnk)を比較し、第rnk位のRange("E" & i)[i]を抽出
+            For i = 0 To UBound(tmpStrList)
+                If CLng(rankList(rnk)) < CLng(tmpStrList(i)) Then
+                        rankList(rnk) = tmpStrList(i)
+                        tmpStrList(i) = 0
+                        tmpCnt(rnk) = i
+                End If
+            Next i
+            
+            
+            'データを元に戻す
+            For i = 0 To UBound(tmpStrList)
+                tmpStrList(i) = tmpStrList1(i)
+            Next i
+            
+            
+            '次の最上位検索のために、第rnk位のデータを0にする
+            For i = 0 To arrList(4) - 1
+                If tmpCnt(i) <> 0 Then
+                    tmpStrList(i) = 0
+                End If
+            Next i
+            
+            str1 = str1 & rankList(rnk) & Chr(10)
+            
+            'rankList(rnk) = tmpStrList(0)
+            'For i = 0 To UBound(tmpStrList)
+            '    Debug.Print "lalalls" & i
+            '    If i <> 0 Then
+            '
+            '        If tmpStrList(i) = "" Then
+            '            tmpStrList(i) = "0"
+            '        End If
+            '
+            '        If CLng(rankList(rnk)) < CLng(tmpStrList(i)) Then
+            '            rankList(rnk) = tmpStrList(i)
+            '            tmpStrList(i) = "0"
+            '            str = rankList(rnk)
+            '        End If
+            '
+            '    End If
+            'Next i
+            
+        Next rnk
+        
+        str = ""
+        For i = 0 To arrList(4) - 1
+            str = str & rankList(i) & Chr(10)
+        Next i
+        Debug.Print str
+        
+        MsgBox str1
+        
+        
+        str = ""
+        ReDim tmpCnt(arrList(4)) As Integer
+        ReDim rankList(4) As String
+        rankList(0) = "0"
+        rankList(1) = "0"
+        rankList(2) = "0"
+        rankList(3) = "0"
+        Dim tempStrLIst1() As String
+        ReDim tempStrLIst1(10) As String
+        
+        For i = 21 To 30
+            tempStrLIst1(i - 21) = Range("E" & i).Value
+        Next i
+        For rnk = 0 To arrList(4) - 1
+            For i = 21 To 30
+                If CLng(rankList(rnk)) < CLng(Range("E" & i)) Then
+                        rankList(rnk) = Range("E" & i).Value
+                        Range("E" & i).Value = 0
+                        tmpCnt(rnk) = i
+                End If
+            Next i
+            
+            For i = 21 To 30
+                Range("E" & i).Value = tempStrLIst1(i - 21)
+                
+            Next i
+            For j = 0 To arrList(4) - 1
+                If tmpCnt(j) <> 0 Then
+                    Range("E" & tmpCnt(j)).Value = 0
+                End If
+            Next j
+            str = str & rankList(rnk) & Chr(10)
+        Next rnk
+        
+        Debug.Print str
+        
         
         
     Case Else
