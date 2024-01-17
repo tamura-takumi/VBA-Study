@@ -16,10 +16,16 @@ Sub main()
         Exit Sub
     End If
     
+    Call おためし02
+    
+    
     '処理番号に応じた処理を実行する。
     '1:
     Call 処理実行(Range("B15").Value)
     
+    Call おためし02
+    Workbooks(Range("B14").Value).Activate
+    Sheets("地域の人口ランキング").Activate
     MsgBox "main終了"
     
 End Sub
@@ -35,7 +41,16 @@ Sub おためし01()
 End Sub
 Sub おためし02()
     'おためし02
-    MsgBox "testおためし02"
+    
+    Workbooks("da01.xlsx").Activate
+    Sheets("人口 (2)").Activate
+    Range("E21:E30").Copy
+    Sheets("人口").Activate
+    Range("E21").Select
+    ActiveSheet.Paste
+    Workbooks("Book1.xlsm").Activate
+    
+    
 End Sub
 Sub おためし03()
     'おためし03
@@ -118,11 +133,15 @@ Private Sub 処理実行(syoriNo As Integer)
         Dim rankList() As String
         Dim tmpStrList() As String
         Dim tmpStrList1() As String
-        Dim tmpCnt() As Integer
+        Dim tmpCnt() As Long
         Dim areaFindFrom, areaFindTo As Integer
         Dim cnt As Integer
+        Dim indexNum() As Long
+        Dim indexNumCnt As Integer
         Dim str As String
         Dim flg As Boolean
+        Dim Max As Long
+        Dim Max_index As String
         flg = False
         Dim map As Object
         Set map = CreateObject("Scripting.Dictionary")
@@ -175,19 +194,17 @@ Private Sub 処理実行(syoriNo As Integer)
         Next i
         
         '「年度範囲の人口総数のセル列番号を取得」の総数データ抽出開始列番号を取得し、tmpCnt(0)に代入
-        ReDim tmpCnt(UBound(ageList)) As Integer
+        ReDim tmpCnt(UBound(ageList)) As Long
         For i = LBound(ageList) To UBound(ageList)
             If ageList(i) Like arrList(1) & "?" Then
                 If i = 0 Then
                     tmpCnt(0) = 2
-                    Debug.Print "dddd"
                 Else
                     tmpCnt(0) = 2 + i * 3
-                    Debug.Print "ddddsssss"
                 End If
             End If
         Next i
-        ReDim Preserve tmpCnt(UBound(ageList)) As Integer
+        ReDim Preserve tmpCnt(UBound(ageList)) As Long
         
         '年代配列から、年代From～Toの範囲で抽出後、再度年代配列に格納する。
         cnt = 0
@@ -224,7 +241,7 @@ Private Sub 処理実行(syoriNo As Integer)
         Next i
         
         '年度範囲内、地域CD範囲内の人口総数からN位までの値を取得
-        ReDim Preserve tmpCnt(UBound(ageList)) As Integer
+        ReDim Preserve tmpCnt(UBound(ageList)) As Long
         '列の開始列番号を代入
         'tmpCnt(0) = 2
         str = str & ":" & tmpCnt(0)
@@ -242,22 +259,176 @@ Private Sub 処理実行(syoriNo As Integer)
         cnt = 0
         
         '人口データを配列に格納する
+        'MsgBox "areaFindTo - areaFindFrom" & areaFindTo - areaFindFrom
+        ReDim tmpStrList1(areaFindTo - areaFindFrom + 1) As String
         ReDim tmpStrList(UBound(tmpCnt) * (areaFindTo - areaFindFrom + 1)) As String
         For i = 0 To UBound(tmpCnt) - 1 '横軸
             cnt = 0
-            Debug.Print "処理い"
-            For j = areaFindFrom To areaFindTo '縦軸
-                tmpStrList(i) = Cells(areaFindFrom + cnt, tmpCnt(i))
-                Debug.Print "処理あ"
-                cnt = cnt + 1
-                str = str & tmpStrList(i) & Chr(10)
+            For j = 0 To UBound(tmpStrList1)
+                tmpStrList1(j) = "0"
             Next j
+            For j = areaFindFrom To areaFindTo '縦軸
+                tmpStrList(i) = Cells(areaFindFrom + cnt, tmpCnt(i)) '配列値が正しくないのは、添え字が外側のFORだから
+                tmpStrList1(j - areaFindFrom) = Cells(areaFindFrom + cnt, tmpCnt(i)) 'tmpStrList1にセル情報を一時保存し、tmpStrListにちゃんと保存させたい。。
+                cnt = cnt + 1
+                str = str & tmpStrList1(i) & Chr(10)
+            Next j
+            
             str = str & Chr(10)
         Next i
         Debug.Print str
         
+        '人口データを配列に格納する2
+        '縦のセル番号確認→OK
+        'MsgBox "tmpCnt(0):" & tmpCnt(0)
+        'MsgBox "tmpCnt(1):" & tmpCnt(1)
+        'MsgBox "tmpCnt(2):" & tmpCnt(2)
+        'MsgBox "tmpCnt(3):" & tmpCnt(3)
+        ReDim tmpStrList1(areaFindTo - areaFindFrom + 1) As String
+        ReDim tmpStrList(UBound(tmpCnt) * (areaFindTo - areaFindFrom + 1)) As String
+        'MsgBox "tmpStrList:" & UBound(tmpStrList)
+        For i = 0 To UBound(tmpCnt) - 1
+            tmpStrList(cnt) = "0"
+        Next i
+        cnt = 0
+        For i = 0 To UBound(tmpCnt) - 1
+            For j = areaFindFrom To areaFindTo
+                tmpStrList(cnt) = Cells(j, tmpCnt(i))
+                cnt = cnt + 1
+            Next j
+        Next i
+        'MsgBox "cnt:" & cnt
+        
+        
         '抽出した人口から最大N位までを算出
         '地域CDの個数区切りで年代は切替
+        
+        
+        Debug.Print "---------------"
+        For i = 0 To UBound(tmpStrList) - 1
+            Debug.Print tmpStrList(i) & ": " & i
+        Next i
+        Debug.Print "---------------"
+        
+        
+        
+        '配列からN位の最大値を取得
+        indexNumCnt = 0
+        ReDim indexNum(arrList(4) - 1) As Long
+        ReDim tmpCnt(UBound(tmpStrList) - 1) As Long
+        For rnk = 0 To arrList(4) - 1
+        For i = 0 To UBound(tmpStrList) - 1
+            If tmpStrList(i) = "" Then
+                tmpStrList(i) = 0
+            End If
+            tmpCnt(i) = CLng(tmpStrList(i))
+        Next i
+        Max = Application.WorksheetFunction.Max(tmpCnt)
+        'MsgBox "順位" & rnk & ":" & Max
+        cnt = 0
+        For i = 0 To UBound(tmpCnt)
+            If tmpCnt(i) = Max Then
+                'インデックス番号を取得
+                indexNum(indexNumCnt) = i
+            End If
+        Next i
+        Debug.Print "indexNum(indexNumCnt):" & indexNum(indexNumCnt)
+        '配列内の最大値を0に設定
+        tmpStrList(indexNum(indexNumCnt)) = "0"
+        indexNumCnt = indexNumCnt + 1
+        Next rnk
+        
+        'MsgBox "indexNum(0):" & indexNum(0) '33
+        'MsgBox "indexNum(1):" & indexNum(1) '23
+        'MsgBox "indexNum(2):" & indexNum(2) '13
+        
+        'indexNum配列を元に、セル番地を取得
+        str = ""
+        For i = 0 To arrList(4) - 1
+            '列番号の取得
+            Debug.Print i + 1 & "位の列番号:" & Int(indexNum(i) / (areaFindTo - areaFindFrom + 1)) * 3 + 5
+            '行番号の取得
+            Debug.Print i + 1 & "位の行番号:" & Int(indexNum(i) Mod (areaFindTo - areaFindFrom + 1)) + areaFindFrom
+            
+            '人口総数を地域の人口ランキングシートに反映
+            Sheets("人口").Activate
+            str = Cells(Int(indexNum(i) Mod (areaFindTo - areaFindFrom + 1)) + areaFindFrom, Int(indexNum(i) / (areaFindTo - areaFindFrom + 1)) * 3 + 5).Value
+            Debug.Print "人口:" & str
+            Sheets("地域の人口ランキング").Activate
+            '行の指定
+            Range("B3").End(xlDown).Select
+            Selection.Offset(i * 4, 0).Select
+            Debug.Print "-----------------------------------"
+            Debug.Print "人口総数"
+            Debug.Print "Selection.Address:" & Selection.Address
+            Debug.Print "Selection.Address.Row:" & ActiveCell.MergeArea.Item(ActiveCell.MergeArea.Count).row
+            Range("D" & ActiveCell.MergeArea.Item(ActiveCell.MergeArea.Count).row).Value = str
+            
+            '男性人口を地域の人口ランキングシートに反映
+            Sheets("人口").Activate
+            str = Cells(Int(indexNum(i) Mod (areaFindTo - areaFindFrom + 1)) + areaFindFrom, Int(indexNum(i) / (areaFindTo - areaFindFrom + 1)) * 3 + 5).Offset(1, 0).Value
+            Debug.Print "人口:" & str
+            Sheets("地域の人口ランキング").Activate
+            Range("B3").End(xlDown).Select
+            Selection.Offset(i * 4, 0).Select
+            Debug.Print "-----------------------------------"
+            Debug.Print "男性人口総数"
+            Debug.Print "Selection.Address:" & Selection.Address
+            Debug.Print "Selection.Address.Row:" & ActiveCell.MergeArea.Item(ActiveCell.MergeArea.Count).row
+            Range("D" & ActiveCell.MergeArea.Item(ActiveCell.MergeArea.Count).row).Offset(-2, 2).Value = str
+            
+            '女性人口を地域の人口ランキングシートに反映
+            Sheets("人口").Activate
+            str = Cells(Int(indexNum(i) Mod (areaFindTo - areaFindFrom + 1)) + areaFindFrom, Int(indexNum(i) / (areaFindTo - areaFindFrom + 1)) * 3 + 5).Offset(2, 0).Value
+            Debug.Print "人口:" & str
+            Sheets("地域の人口ランキング").Activate
+            Range("B3").End(xlDown).Select
+            Selection.Offset(i * 4, 0).Select
+            Debug.Print "-----------------------------------"
+            Debug.Print "女性人口総数"
+            Debug.Print "Selection.Address:" & Selection.Address
+            Debug.Print "Selection.Address.Row:" & ActiveCell.MergeArea.Item(ActiveCell.MergeArea.Count).row
+            Range("D" & ActiveCell.MergeArea.Item(ActiveCell.MergeArea.Count).row).Offset(-1, 2).Value = str
+            
+            
+            
+            '年度を地域の人口ランキングシートに反映
+            Sheets("人口").Activate
+            str = Cells(7, Int(indexNum(i) / (areaFindTo - areaFindFrom + 1)) * 3 + 5).Value
+            Sheets("地域の人口ランキング").Activate
+            Debug.Print "-----------------------------------"
+            Debug.Print "年度"
+            Range("D" & ActiveCell.row).FormulaR1C1 = str
+            
+            '地域CDを人口ランキングシートに反映
+            Sheets("人口").Activate
+            str = Cells(Int(indexNum(i) Mod (areaFindTo - areaFindFrom + 1)) + areaFindFrom, 1).Value
+            Sheets("地域の人口ランキング").Activate
+            Debug.Print "地域CD"
+            Range("D" & ActiveCell.MergeArea.Item(ActiveCell.MergeArea.Count).row).Offset(-2, 0).Value = Left(str, 5)
+            
+            '地域名を人口ランキングシートに反映
+            Range("D" & ActiveCell.MergeArea.Item(ActiveCell.MergeArea.Count).row).Offset(-1, 0).Value = Mid(str, 7)
+            
+        Next i
+        
+        
+        
+        'MsgBox tmpStrList(indexNum(0)) & "位は：" & tmpCnt(indexNum(0))
+        'MsgBox tmpStrList(indexNum(1)) & "位は：" & tmpCnt(indexNum(1))
+        'MsgBox tmpStrList(indexNum(2)) & "位は：" & tmpCnt(indexNum(2))
+        'MsgBox tmpStrList(indexNum(3)) & "位は：" & tmpCnt(indexNum(3))
+        
+        
+        
+        For i = 0 To UBound(tmpCnt)
+            tmpCnt(i) = 0
+        Next i
+        'メッセージボックス表示
+        'MsgBox "最大値：" & Max & vbCrLf & "インデックス：" & Left(Max_index, Len(Max_index) - 1)
+        
+        
+        
         
         
         cnt = 0
@@ -331,11 +502,11 @@ Private Sub 処理実行(syoriNo As Integer)
         Next i
         Debug.Print str
         
-        MsgBox str1
+        'MsgBox str1
         
         
         str = ""
-        ReDim tmpCnt(arrList(4)) As Integer
+        ReDim tmpCnt(arrList(4)) As Long
         ReDim rankList(4) As String
         rankList(0) = "0"
         rankList(1) = "0"
